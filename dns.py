@@ -202,6 +202,65 @@ def type_CNAME(query,_type,hostname):
 """
 
           
+def type_MX(query,_type,hostname):
+	rcode=1
+	retry=0
+	sock = socket(AF_INET, SOCK_DGRAM)
+	while rcode != 0 and retry < 10:
+		sock.sendto(query, (server, serverPort))
+		reply, addr = sock.recvfrom(2048)
+		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		retry += 1
+	if rcode != 0:
+		print("** server can't find", hostname,":No answer")
+		return 0
+	start = 0
+	while True:
+		try:
+			if reply[start] == 192 and reply[start+1] == 12:
+				break;
+			else:
+				start += 1
+		except:
+			return 0
+	
+	y = 0
+	k = reply[start+y+11] - 2 #length (excluding preference)
+	beg = start+y+14
+	a1 = reply[beg+k-1]
+	b1 = reply[beg+k-2]
+	for i in range(0,number_response):
+		beg = start+y+14
+		a = reply[beg-2]
+		b = reply[beg-1]
+		preference = int(a)*16*16 + int(b)
+		length = reply[start+y+11] - 2
+		res = str(preference)+" "
+		if length < k:
+			temp = beg+length-2 #to remove c0
+		else:
+			temp = beg+length-1
+		for i in range (beg+1,temp):
+			x = reply[i]
+			if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+				res += "."
+			else:
+				res += chr(reply[i])
+		if length < k:
+			pointer = reply[beg+length-1] -12
+			end = k - length
+			for i in range (pointer,pointer+end+1):
+				x = reply[i]
+				if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+					res += "."
+				else:
+					res += chr(reply[i])
+					
+		if a1 == 12 and b1 == 192: #ie 0c
+			print(hostname,"\tmail exchanger = ",res+"."+hostname+".")
+		else:
+			print(hostname,"\tmail exchanger = ",res+".")
+		y+=14+length
 	
 	
 def finalCall(hostname,type):
