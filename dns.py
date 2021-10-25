@@ -167,41 +167,7 @@ def type_NS(query,_type,hostname):
 		else:
 			print(hostname,"\tnameserver = ",res+".")
 		y+=12+length
-
-"""
-def type_CNAME(query,_type,hostname):
-	rcode=0
-	retry=0
-	sock = socket(AF_INET, SOCK_DGRAM)
-	while rcode == 0 and retry < 10:
-		sock.sendto(query, (server, serverPort))
-		reply, addr = sock.recvfrom(2048)
-		rcode = reply[:8]
-		rcode=rcode[7:]
-		rcode = int.from_bytes(rcode,'big')
-		retry += 1
-	if rcode == 0:
-		print("** server can't find", hostname,":No answer")
-		return 0
-	start = 0
-	while True:
-		#\xc0\x0c
-		try:
-			if reply[start] == 192 and reply[start+1] == 12:
-				break;
-			else:
-				start += 1
-		except:
-			return 0
-	x = 0
-	beg = start+12
-	for i in range(0,rcode):
-		length = reply[start+11+x]
-		print(hostname,"\tcanonical name = ",str(reply[beg+x:beg+x+length-2].decode("ISO-8859-1"))+".")
-		x+=12+length
-"""
-
-          
+         
 def type_MX(query,_type,hostname):
 	rcode=1
 	retry=0
@@ -261,6 +227,54 @@ def type_MX(query,_type,hostname):
 		else:
 			print(hostname,"\tmail exchanger = ",res+".")
 		y+=14+length
+
+
+def type_CNAME(query,_type,hostname):
+	rcode=1
+	retry=0
+	sock = socket(AF_INET, SOCK_DGRAM)
+	while rcode != 0 and retry < 10:
+		sock.sendto(query, (server, serverPort))
+		reply, addr = sock.recvfrom(2048)
+		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		retry += 1
+	if rcode != 0:
+		print("** server can't find", hostname,":No answer")
+		return 0
+	start = 0
+	while True:
+		#\xc0\x0c
+		try:
+			if reply[start] == 192 and reply[start+1] == 12:
+				break;
+			else:
+				start += 1
+		except:
+			return 0
+	y = 0
+	beg = start+12
+	for i in range(0,number_response):
+		length = reply[start+11+y]
+		res =""
+		for i in range (beg+y+1,beg+y+length-1):
+			x = reply[i]
+			if x == 192:#next is pointer
+				pointer = reply[i+1] - 12
+				for j in range (pointer,pointer+length):
+					k = reply[j]
+					if k == 0:
+						break;
+					if (k==1 or k==2 or k==3 or k==4 or k==5 or k==6 or k==7 or k==8 or k==9 or k==10 or k==11 or k==12 or k==13 or k==14 or k==15):
+						res += "."
+					else:
+						res += chr(reply[j])
+						
+			elif (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+				res += "."
+			else:
+				res += chr(reply[i])
+		print(hostname,"\tcanonical name = "+res+"")
+		y+=12+length	
 	
 	
 def finalCall(hostname,type):
@@ -277,7 +291,10 @@ def finalCall(hostname,type):
 		ip= type_NS(query,"NS",hostname)
 	if type =='MX':	
 		type_MX(query,"MX",hostname)
-	
+	if type =='CNAME':	
+		type_CNAME(query,"CNAME",hostname)
+			
+			
 def main():
 	hostname = sys.argv[1]
 	try:
