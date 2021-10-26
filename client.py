@@ -1,55 +1,8 @@
-import sys
-import struct
-from socket import*
-import os.path
-from threading import Thread
-import time
-import ctypes # to create buffers
-import codecs
+from library import *
 #public DNS server for Google DNS.
-server = '8.8.8.8'
+server = '127.0.0.1'
 #DNS server runs on port 53
 serverPort = 53 
-
-def constructQuery(hostname, _type, _class):
-	query = bytes("\x08\x08" + "\x00\x00" + "\x00\x01" + "\x00\x00" + "\x00\x00" + "\x00\x00", 'utf-8')
-	d = bytes("", 'utf-8')
-
-	for a in hostname.split('.'):
-		d += struct.pack("!b" + str(len(a)) + "s", len(a), bytes(a, "utf-8"))
-
-	query = query +  d +  bytes("\x00", 'utf-8') #terminate domain with zero len
-	if _type=='A'and  _class=="IN":
-		query = query + bytes("\x00\x01" + "\x00\x01", 'utf-8') #type A, class IN
-	elif _type=='AAAA'and  _class=="IN":
-		query = query + bytes("\x00\x1c" + "\x00\x01", 'utf-8') #type AAAA, class IN
-	elif _type=='NS'and  _class=="IN":
-		query = query + bytes("\x00\x02" + "\x00\x01", 'utf-8') #type NS, class IN
-	elif _type=='MX'and  _class=="IN":
-		query = query + bytes("\x00\x0f" + "\x00\x01", 'utf-8') #type MX, class IN
-	elif _type=='CNAME'and  _class=="IN":
-		query = query + bytes("\x00\x05" + "\x00\x01", 'utf-8') #type CNAME, class IN
-	#print('query is', query)
-	return query
-
-# source = https://stackoverflow.com/questions/54278329/how-to-parse-dns-question-field-with-python-raw-sockets
-def data_packet_dns(data):
-    tuple_data_dns = struct.unpack('!HHHHHH', data[:12])
-    identification = tuple_data_dns[0]
-    flags = tuple_data_dns[1] 
-    number_queries = tuple_data_dns[2]
-    number_response = tuple_data_dns[3]
-    number_authority = tuple_data_dns[4]
-    number_additional = tuple_data_dns[5]
-    qr = (flags & 32768) != 0
-    opcode = (flags & 30720 ) >> 11
-    aa = (flags & 1024) != 0
-    tc = (flags & 512) != 0
-    rd = (flags & 256) != 0
-    ra = (flags & 128) != 0
-    z = (flags & 112) >> 4
-    rcode = flags & 15
-    return number_queries, number_response, rcode, data[12:]
     
 def getip(query,_type,hostname):
 	rcode=1
@@ -58,7 +11,7 @@ def getip(query,_type,hostname):
 	while rcode != 0 and retry < 10:
 		sock.sendto(query, (server, serverPort))
 		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
@@ -122,7 +75,7 @@ def type_NS(query,_type,hostname):
 	while rcode != 0 and retry < 10:
 		sock.sendto(query, (server, serverPort))
 		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
@@ -148,7 +101,7 @@ def type_NS(query,_type,hostname):
 		res =""
 		for i in range (beg+1,beg+length-2):
 			x = reply[i]
-			if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+			if x in range(0, 16):
 				res += "."
 			else:
 				res += chr(reply[i])
@@ -157,7 +110,7 @@ def type_NS(query,_type,hostname):
 			end = k - length
 			for i in range (pointer,pointer+end):
 				x = reply[i]
-				if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+				if x in range(0, 16):
 					res += "."
 				else:
 					res += chr(reply[i])
@@ -175,7 +128,7 @@ def type_MX(query,_type,hostname):
 	while rcode != 0 and retry < 10:
 		sock.sendto(query, (server, serverPort))
 		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
@@ -208,7 +161,7 @@ def type_MX(query,_type,hostname):
 			temp = beg+length-1
 		for i in range (beg+1,temp):
 			x = reply[i]
-			if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+			if x in range(0, 16):
 				res += "."
 			else:
 				res += chr(reply[i])
@@ -217,7 +170,7 @@ def type_MX(query,_type,hostname):
 			end = k - length
 			for i in range (pointer,pointer+end+1):
 				x = reply[i]
-				if (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+				if x in range(0, 16):
 					res += "."
 				else:
 					res += chr(reply[i])
@@ -236,7 +189,7 @@ def type_CNAME(query,_type,hostname):
 	while rcode != 0 and retry < 10:
 		sock.sendto(query, (server, serverPort))
 		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, rcode, reply = data_packet_dns(reply)
+		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
@@ -264,12 +217,12 @@ def type_CNAME(query,_type,hostname):
 					k = reply[j]
 					if k == 0:
 						break;
-					if (k==1 or k==2 or k==3 or k==4 or k==5 or k==6 or k==7 or k==8 or k==9 or k==10 or k==11 or k==12 or k==13 or k==14 or k==15):
+					if k in range(1, 16):
 						res += "."
 					else:
 						res += chr(reply[j])
 						
-			elif (x==0 or x==1 or x==2 or x==3 or x==4 or x==5 or x==6 or x==7 or x==8 or x==9 or x==10 or x==11 or x==12 or x==13 or x==14 or x==15):
+			elif x in range(0, 16):
 				res += "."
 			else:
 				res += chr(reply[i])
