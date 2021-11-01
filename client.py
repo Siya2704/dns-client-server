@@ -5,45 +5,13 @@ server = '127.0.0.1'
 serverPort = 53 
     
 def getip(query,_type,hostname):
-	rcode=1
-	retry=0
-	sock = socket(AF_INET, SOCK_DGRAM)
-	while rcode != 0 and retry < 10:
-		sock.sendto(query, (server, serverPort))
-		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
-		retry += 1
-	if rcode != 0:
-		print("** server can't find", hostname,":No answer")
-		return 0;
-	#if rcode is zero then ok
-	start = 0
-	while True:
-		try:
-			if reply[start] == 192 and reply[start+1] == 12:
-				break;
-			else:
-				start += 1
-		except:
-			return 0
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
 	if _type=='A':
-		y = 0
-		for i in range(0,number_response):
-			beg = start+y+12
-			#last 4 bytes contains ip address
-			ip = reply[beg:beg+4]
-			#ip address in bytes
-			#convert byte to string
-			ipv4 = ""
-			for i in range(0,4):
-				ipv4 += str(ip[i])
-				if(i != 3):
-					ipv4 += "."
-			#ipv4 has ip address
-			ip = ipv4
+		start = len(query) - 12#start of answer
+		ip_addr, start =get_ipv4(reply, start,number_response)
+		for ip in ip_addr:
 			print("Name:\t",hostname)
 			print("Address: ",ip)
-			y+=16
 		
 	elif _type=="AAAA":
 		y = 0
@@ -69,27 +37,7 @@ def getip(query,_type,hostname):
 			y+=28
 
 def type_NS(query,_type,hostname):
-	rcode=1
-	retry=0
-	sock = socket(AF_INET, SOCK_DGRAM)
-	while rcode != 0 and retry < 10:
-		sock.sendto(query, (server, serverPort))
-		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
-		retry += 1
-	if rcode != 0:
-		print("** server can't find", hostname,":No answer")
-		return 0
-	start = 0
-	while True:
-		#\xc0\x0c
-		try:
-			if reply[start] == 192 and reply[start+1] == 12:
-				break;
-			else:
-				start += 1
-		except:
-			return 0	
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)	
 	y = 0
 	k = reply[start+y+11] #length
 	beg = start+y+12
@@ -122,27 +70,7 @@ def type_NS(query,_type,hostname):
 		y+=12+length
          
 def type_MX(query,_type,hostname):
-	rcode=1
-	retry=0
-	sock = socket(AF_INET, SOCK_DGRAM)
-	while rcode != 0 and retry < 10:
-		sock.sendto(query, (server, serverPort))
-		reply, addr = sock.recvfrom(2048)
-		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
-		retry += 1
-	if rcode != 0:
-		print("** server can't find", hostname,":No answer")
-		return 0
-	start = 0
-	while True:
-		try:
-			if reply[start] == 192 and reply[start+1] == 12:
-				break;
-			else:
-				start += 1
-		except:
-			return 0
-	
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
 	y = 0
 	k = reply[start+y+11] - 2 #length (excluding preference)
 	beg = start+y+14
@@ -183,6 +111,35 @@ def type_MX(query,_type,hostname):
 
 
 def type_CNAME(query,_type,hostname):
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
+	y = 0
+	beg = start+12
+	for i in range(0,number_response):
+		length = reply[start+11+y]
+		res =""
+		for i in range (beg+y,beg+y+length-1):
+			x = reply[i]
+			if x == 192:#next is pointer
+				pointer = reply[i+1] - 11 #-12
+				j = pointer
+				while(1):
+					k = reply[j]
+					if k == 0:
+						break;
+					if k in range(1, 16):
+						res += "."
+					else:
+						res += chr(reply[j])
+					j += 1
+					
+			elif x in range(0, 16):
+				res += "."
+			else:
+				res += chr(reply[i])
+		print(hostname,"\tcanonical name = "+res+"")
+		y+=12+length	
+	
+def send(query):
 	rcode=1
 	retry=0
 	sock = socket(AF_INET, SOCK_DGRAM)
@@ -193,43 +150,12 @@ def type_CNAME(query,_type,hostname):
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
-		return 0
-	start = 0
-	while True:
-		#\xc0\x0c
-		try:
-			if reply[start] == 192 and reply[start+1] == 12:
-				break;
-			else:
-				start += 1
-		except:
-			return 0
-	y = 0
-	beg = start+12
-	for i in range(0,number_response):
-		length = reply[start+11+y]
-		res =""
-		for i in range (beg+y+1,beg+y+length-1):
-			x = reply[i]
-			if x == 192:#next is pointer
-				pointer = reply[i+1] - 12
-				for j in range (pointer,pointer+length):
-					k = reply[j]
-					if k == 0:
-						break;
-					if k in range(1, 16):
-						res += "."
-					else:
-						res += chr(reply[j])
-						
-			elif x in range(0, 16):
-				res += "."
-			else:
-				res += chr(reply[i])
-		print(hostname,"\tcanonical name = "+res+"")
-		y+=12+length	
+		return 0;
+	#if rcode is zero then ok
+	start = len(query) - 12#start of answer
+	return number_queries, number_response, number_authority, number_additional, rcode, reply,start
 	
-	
+
 def finalCall(hostname,type):
 	print("Server:		-----")#127.0.0.53
 	print("Address:	-----#53")

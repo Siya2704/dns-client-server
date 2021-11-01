@@ -11,20 +11,10 @@ def dns_response(ip,query):
 
 	#building response
 	start = len(query) - 12#start of answer
-	y = 12
-	ip_addr =[]
-	for i in range(number_response):
-		beg = start+y
-		ip = response[beg:beg+4]
-		ipv4 = ""
-		for i in range(0,4):
-			ipv4 += str(ip[i])
-			if(i != 3):
-				ipv4 += "."
-		ip_addr.append(ipv4)
-		y+=16
-		start += 16#start of authoritative answer	
-	x = 0
+	ip_addr, start =get_ipv4(response, start,number_response)
+	
+	#start of authoritative answer	
+	#x = 0
 	if(number_response):
 		return ip_addr,True
 		

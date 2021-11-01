@@ -46,3 +46,21 @@ def constructQuery(hostname, type, clas):
 		query = query + bytes("\x00\x05" + "\x00\x01", 'utf-8') #type CNAME, class IN
 	#print('query is', query)
 	return query
+	
+def get_ipv4(response,start,number_response):
+	ip_addr =[]
+	for i in range(number_response):
+		if(response[start+3] == 1):#type A response
+			start += 12 #points to start of ip address
+			ip = response[start:start+4]
+			ipv4 = ""
+			for j in range(0,4):
+				ipv4 += str(ip[j])
+				if(j != 3):
+					ipv4 += "."
+			ip_addr.append(ipv4);
+			start += 4;
+		else:
+			lent = response[start+11]
+			start += lent + 12
+	return ip_addr, start
