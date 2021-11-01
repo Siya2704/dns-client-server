@@ -9,8 +9,24 @@ def dns_response(ip,query):
 	response, addr2 = sock2.recvfrom(2048)
 	number_queries, number_response, number_authority, number_additional, rcode, response = data_packet_dns(response)
 	#building response
-	start = len(query) - 12#start of authoritative answer
+	start = len(query) - 12#start of answer
+	y = 12
+	ip_addr =[]
+	for i in range(number_response):
+		beg = start+y
+		ip = response[beg:beg+4]
+		ipv4 = ""
+		for i in range(0,4):
+			ipv4 += str(ip[i])
+			if(i != 3):
+				ipv4 += "."
+		ip_addr.append(ipv4)
+		y+=16
+		start += 16#start of authoritative answer	
 	x = 0
+	if(number_response):
+		return ip_addr,True
+		
 	for i in range(number_authority):
 		length = start + 10
 		a = response[length]
@@ -29,7 +45,11 @@ def dns_response(ip,query):
 					ipv4 += "."
 			list.append(ipv4);
 			start += 4;
-	return list
+		else:
+			lent = response[start+11]
+			start += lent + 12
+			
+	return list, False	
 
 def get_hostname(query):
 	length = len(query) - 16
@@ -46,21 +66,24 @@ def get_hostname(query):
 	return st
 
 while True:
-	ip = '199.7.83.42'#ICANN server
-	#ip = '37.209.192.12'
-	list = ['37.209.192.12', '37.209.194.12', '37.209.196.12', '37.209.198.12', '156.154.100.20', '156.154.101.20']
+	root = ['199.7.83.42']#ICANN server
 	query, addr = sock.recvfrom(2048)
-	root = dns_response(ip,query)
-	print(root)
-	#hostname = get_hostname(query)
-	#hostname2 = hostname.split('.',1)[0] #removing .in or .com
-	#type = query[len(query)-2]
-	#clas = query[len(query)-1]
-	#query = constructQuery(hostname2,type,clas)
-	for ip in root:
-		tld_temp = dns_response(ip,query)
-		print("name = ", tld_temp)
-		#tld.append(tld_tmp)
+	hostname = get_hostname(query)
+	query_to_send = constructQuery(hostname,'A',"IN")
+	got = False
+	while True:
+		if (got == True):#found
+			print("found")
+			break
+		else:
+			print("sending query to ", root[0])
+			store_root = root
+			root, got = dns_response(root[0],query_to_send)
+		
+	ip = store_root[0]
+	sock2.sendto(query, (ip, 53))
+	response, addr2 = sock2.recvfrom(2048)
+	sock.sendto(response,addr)
 
 
 

@@ -231,8 +231,8 @@ def type_CNAME(query,_type,hostname):
 	
 	
 def finalCall(hostname,type):
-	print("Server:		8.8.8.8")#127.0.0.53
-	print("Address:	8.8.8.8#53")
+	print("Server:		-----")#127.0.0.53
+	print("Address:	-----#53")
 	print("\nNon-authoritative answer:")
 	
 	query = constructQuery(hostname,type,"IN")
