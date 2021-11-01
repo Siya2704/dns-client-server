@@ -8,6 +8,7 @@ def dns_response(ip,query):
 	sock2.sendto(query, (ip, 53))
 	response, addr2 = sock2.recvfrom(2048)
 	number_queries, number_response, number_authority, number_additional, rcode, response = data_packet_dns(response)
+
 	#building response
 	start = len(query) - 12#start of answer
 	y = 12
@@ -65,25 +66,32 @@ def get_hostname(query):
 	st = st[:len(st) - 2] #removing last two .
 	return st
 
+def backtracking(root):
+	for r in root:
+		print("sending query to ", r)
+		store_root = r
+		res, got = dns_response(r,query_to_send)
+		if (got == True):#found
+			return store_root
+		if len(res) == 0:
+			continue
+		else:
+			return backtracking(res)
+	return -1
+
 while True:
 	root = ['199.7.83.42']#ICANN server
 	query, addr = sock.recvfrom(2048)
 	hostname = get_hostname(query)
 	query_to_send = constructQuery(hostname,'A',"IN")
 	got = False
-	while True:
-		if (got == True):#found
-			print("found")
-			break
-		else:
-			print("sending query to ", root[0])
-			store_root = root
-			root, got = dns_response(root[0],query_to_send)
-		
-	ip = store_root[0]
-	sock2.sendto(query, (ip, 53))
-	response, addr2 = sock2.recvfrom(2048)
-	sock.sendto(response,addr)
-
+	ip = backtracking(root)
+	if(ip == -1):
+		print("Cannot resolve");
+		sock.sendto("-1".encode(),addr)
+	else:
+		sock2.sendto(query, (ip, 53))
+		response, addr2 = sock2.recvfrom(2048)
+		sock.sendto(response,addr)
 
 
