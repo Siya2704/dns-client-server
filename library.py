@@ -26,8 +26,11 @@ def data_packet_dns(data):
     rcode = flags & 15
     return number_queries, number_response, number_authority, number_additional, rcode, data[12:]
     
-def constructQuery(hostname, type, clas):
-	query = bytes("\x08\x08" + "\x00\x00" + "\x00\x01" + "\x00\x00" + "\x00\x00" + "\x00\x00", 'utf-8')
+def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
+	if(recurse == 1):
+		query = bytes("\x08\x08" + "\x01\x00" + "\x00\x01" + "\x00\x00" + "\x00\x00" + "\x00\x00", 'utf-8')
+	else:
+		query = bytes("\x08\x08" + "\x00\x00" + "\x00\x01" + "\x00\x00" + "\x00\x00" + "\x00\x00", 'utf-8')
 	d = bytes("", 'utf-8')
 
 	for a in hostname.split('.'):
@@ -64,3 +67,17 @@ def get_ipv4(response,start,number_response):
 			lent = response[start+11]
 			start += lent + 12
 	return ip_addr, start
+	
+def get_hostname(query):
+	length = len(query) - 16
+	query = query[12: 12+length]
+	st = ""
+	i = 0
+	while i < length:
+		size = query[i]
+		for j in range(1,size+1):
+			st += chr(query[i+j])
+		st += "."
+		i += size+1
+	st = st[:len(st) - 2] #removing last two .
+	return st

@@ -42,46 +42,62 @@ def dns_response(ip,query):
 			
 	return list, False	
 
-def get_hostname(query):
-	length = len(query) - 16
-	query = query[12: 12+length]
-	st = ""
-	i = 0
-	while i < length:
-		size = query[i]
-		for j in range(1,size+1):
-			st += chr(query[i+j])
-		st += "."
-		i += size+1
-	st = st[:len(st) - 2] #removing last two .
-	return st
-
-def backtracking(root):
+def iterate_query(root,query):#for iterative query
 	for r in root:
 		print("sending query to ", r)
 		store_root = r
-		res, got = dns_response(r,query_to_send)
+		res, got = dns_response(r,query)
 		if (got == True):#found
 			return store_root
 		if len(res) == 0:
 			continue
 		else:
-			return backtracking(res)
+			return iterate_query(res, query)
 	return -1
 
+def open_resolv():
+	try:
+		resolvconf = open(os.path.abspath("/etc/resolv.conf"),'r')
+		for line in resolvconf.readlines():
+			if '#' in line:
+				pass
+			elif 'nameserver' in line:
+				resolver = line.split('nameserver ',1)[1]
+				resolver = resolver.split('\n',1)[0]
+				return resolver
+	except Exception as e:
+		print(e)
+		exit()
+		
+			
 while True:
-	root = ['199.7.83.42']#ICANN server
 	query, addr = sock.recvfrom(2048)
-	hostname = get_hostname(query)
-	query_to_send = constructQuery(hostname,'A',"IN")
-	got = False
-	ip = backtracking(root)
-	if(ip == -1):
-		print("Cannot resolve");
-		sock.sendto("-1".encode(),addr)
-	else:
-		sock2.sendto(query, (ip, 53))
+	tuple_data_dns = struct.unpack('!HHHHHH', query[:12])
+	flags = tuple_data_dns[1] 
+	rd = (flags & 256) != 0
+	if(rd == 1):
+		#recursive
+		dns = open_resolv()
+		sock2.sendto(query, (dns, 53))
 		response, addr2 = sock2.recvfrom(2048)
+		print(response)
 		sock.sendto(response,addr)
+	else:
+		#iterative
+		root = ['199.7.83.42']#ICANN server
+		got = False
+		ip = iterate_query(root, query)
+		if(ip == -1):
+			print("Cannot resolve");
+			sock.sendto("-1".encode(),addr)
+		else:
+			sock2.sendto(query, (ip, 53))
+			response, addr2 = sock2.recvfrom(2048)
+			sock.sendto(response,addr)
 
+		
+		
+		
+		
+		
 

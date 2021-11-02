@@ -5,7 +5,7 @@ server = '127.0.0.1'
 serverPort = 53 
     
 def getip(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
 	if _type=='A':
 		start = len(query) - 12#start of answer
 		ip_addr, start =get_ipv4(reply, start,number_response)
@@ -37,7 +37,7 @@ def getip(query,_type,hostname):
 			y+=28
 
 def type_NS(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)	
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)	
 	y = 0
 	k = reply[start+y+11] #length
 	beg = start+y+12
@@ -70,7 +70,7 @@ def type_NS(query,_type,hostname):
 		y+=12+length
          
 def type_MX(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
 	y = 0
 	k = reply[start+y+11] - 2 #length (excluding preference)
 	beg = start+y+14
@@ -111,7 +111,7 @@ def type_MX(query,_type,hostname):
 
 
 def type_CNAME(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query)
+	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
 	y = 0
 	beg = start+12
 	for i in range(0,number_response):
@@ -139,7 +139,7 @@ def type_CNAME(query,_type,hostname):
 		print(hostname,"\tcanonical name = "+res+"")
 		y+=12+length	
 	
-def send(query):
+def send(query,hostname):
 	rcode=1
 	retry=0
 	sock = socket(AF_INET, SOCK_DGRAM)
@@ -156,12 +156,12 @@ def send(query):
 	return number_queries, number_response, number_authority, number_additional, rcode, reply,start
 	
 
-def finalCall(hostname,type):
+def finalCall(hostname,type,recurse):
 	print("Server:		-----")#127.0.0.53
 	print("Address:	-----#53")
 	print("\nNon-authoritative answer:")
 	
-	query = constructQuery(hostname,type,"IN")
+	query = constructQuery(hostname,type,"IN",recurse)
 	if type =='A':
 		ip= getip(query,'A',hostname)
 	if type =='AAAA':
@@ -175,13 +175,22 @@ def finalCall(hostname,type):
 			
 			
 def main():
-	hostname = sys.argv[1]
-	try:
-		type=sys.argv[2]
-		type = type.split('-type=',1)[1]
-		finalCall(hostname,type)
-	except:
-		finalCall(hostname,'A')
+	print(len(sys.argv), sys.argv)
+	hostname = sys.argv[len(sys.argv)-1]
+	type = 'A'#default
+	recurse = 1 #default
+	for i in range(1,len(sys.argv)-1):
+		if(sys.argv[i] == "norecurse"):
+			recurse = 0 #iterative
+			continue
+		x = sys.argv[i].split('=',1)[0]
+		y = sys.argv[i].split('=',1)[1]
+		if (x=="-type"):
+			type = y
+		elif (x=="-timeout"):
+			timeout = y
+
+	finalCall(hostname,type,recurse)
 
 if __name__ == "__main__":
 	main()
