@@ -2,39 +2,26 @@ from library import *
 #public DNS server for Google DNS.
 server = '127.0.0.1'
 #DNS server runs on port 53
-serverPort = 53 
+serverPort = 53
     
 def getip(query,_type,hostname):
 	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
 	if _type=='A':
 		start = len(query) - 12#start of answer
-		ip_addr, start =get_ipv4(reply, start,number_response)
-		for ip in ip_addr:
-			print("Name:\t",hostname)
-			print("Address: ",ip)
+		for i in range(number_response):
+			ip = get_ipv4(reply,start)
+			if reply[start+3] == 1:
+				print("Name:\t",hostname)
+				print("Address: ",ip)
+			lent = reply[start+11]
+			start += lent + 12
 		
 	elif _type=="AAAA":
-		y = 0
 		for i in range(0,number_response):
-			beg = start+y+12
-			#last 16 bytes contains ip address
-			ip = reply[beg:beg+16]
-			#ip address in bytes
-			#convert byte to string
-			ipv6 = ""
-			for i in range(0,16,2):
-				a = str(hex(ip[i])).split('0x',1)[1]
-				b = str(hex(ip[i+1])).split('0x',1)[1]
-				if(len(b) < 2):
-					b = "0"+ b
-				ipv6 += a+b
-				if(i != 14):
-					ipv6 += ":"
-			#ipv6 has ip address
-			ip = ipv6
+			ip = get_ipv6(reply,start)
 			print("Name:\t",hostname)
 			print("Address: ",ip)
-			y+=28
+			start +=28
 
 def type_NS(query,_type,hostname):
 	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)	
@@ -140,17 +127,33 @@ def type_CNAME(query,_type,hostname):
 		y+=12+length	
 	
 def send(query,hostname):
-	rcode=1
-	retry=0
+	rcode,retry,flag =1,0,0
 	sock = socket(AF_INET, SOCK_DGRAM)
 	while rcode != 0 and retry < 10:
+		if(retry != 0):
+			print("**Retrying**")
 		sock.sendto(query, (server, serverPort))
 		reply, addr = sock.recvfrom(2048)
+		try:
+			#data from cache
+			lst = reply.decode()
+			lst = eval(lst)# Convert decoded data into list
+			if(lst[0] =='found'):
+				lst = lst[1]
+			print("From cache")
+			for i in lst:
+				print("Name:\t",hostname)
+				print("Address: ",i)
+			flag = 1
+		except:
+			pass
+		if flag == 1:#if in cache
+			sys.exit()
 		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
 		retry += 1
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
-		return 0;
+		sys.exit('-');
 	#if rcode is zero then ok
 	start = len(query) - 12#start of answer
 	return number_queries, number_response, number_authority, number_additional, rcode, reply,start
@@ -175,7 +178,6 @@ def finalCall(hostname,type,recurse):
 			
 			
 def main():
-	print(len(sys.argv), sys.argv)
 	hostname = sys.argv[len(sys.argv)-1]
 	type = 'A'#default
 	recurse = 1 #default

@@ -1,21 +1,16 @@
-import sys
-import struct
+import sys, struct, os.path, time, json
 from socket import*
-import os.path
 from threading import Thread
-import time
-import ctypes # to create buffers
-import codecs
 
 # source = https://stackoverflow.com/questions/54278329/how-to-parse-dns-question-field-with-python-raw-sockets
 def data_packet_dns(data):
     tuple_data_dns = struct.unpack('!HHHHHH', data[:12])
     identification = tuple_data_dns[0]
     flags = tuple_data_dns[1] 
-    number_queries = tuple_data_dns[2]
-    number_response = tuple_data_dns[3]
-    number_authority = tuple_data_dns[4]
-    number_additional = tuple_data_dns[5]
+    queries = tuple_data_dns[2]
+    response = tuple_data_dns[3]
+    authority = tuple_data_dns[4]
+    additional = tuple_data_dns[5]
     qr = (flags & 32768) != 0
     opcode = (flags & 30720 ) >> 11
     aa = (flags & 1024) != 0
@@ -24,7 +19,7 @@ def data_packet_dns(data):
     ra = (flags & 128) != 0
     z = (flags & 112) >> 4
     rcode = flags & 15
-    return number_queries, number_response, number_authority, number_additional, rcode, data[12:]
+    return queries, response, authority, additional, rcode, data[12:]
     
 def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 	if(recurse == 1):
@@ -50,25 +45,39 @@ def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 	#print('query is', query)
 	return query
 	
-def get_ipv4(response,start,number_response):
-	ip_addr =[]
-	for i in range(number_response):
-		if(response[start+3] == 1):#type A response
-			start += 12 #points to start of ip address
-			ip = response[start:start+4]
-			ipv4 = ""
-			for j in range(0,4):
-				ipv4 += str(ip[j])
-				if(j != 3):
-					ipv4 += "."
-			ip_addr.append(ipv4);
-			start += 4;
-		else:
-			lent = response[start+11]
-			start += lent + 12
-	return ip_addr, start
-	
-def get_hostname(query):
+def get_ipv4(response,start):
+	if(response[start+3] == 1):#type A response
+		start += 12 #points to start of ip address
+		ip = response[start:start+4]
+		ipv4 = ""
+		for j in range(0,4):
+			ipv4 += str(ip[j])
+			if(j != 3):
+				ipv4 += "."
+		return ipv4
+
+def get_ipv6(reply,start):
+	beg = start+12
+	#last 16 bytes contains ip address
+	ip = reply[beg:beg+16]
+	#ip address in bytes
+	#convert byte to string
+	ipv6 = ""
+	for i in range(0,16,2):
+		a = str(hex(ip[i])).split('0x',1)[1]
+		b = str(hex(ip[i+1])).split('0x',1)[1]
+		if(len(b) < 2):
+			b = "0"+ b
+		ipv6 += a+b
+		if(i != 14):
+			ipv6 += ":"
+	#ipv6 has ip address
+	return ipv6	
+		
+
+def get_query_details(query):
+	clas = query[len(query) - 1]
+	type = query[len(query) - 3]
 	length = len(query) - 16
 	query = query[12: 12+length]
 	st = ""
@@ -80,4 +89,4 @@ def get_hostname(query):
 		st += "."
 		i += size+1
 	st = st[:len(st) - 2] #removing last two .
-	return st
+	return st,type, clas
