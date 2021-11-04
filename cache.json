@@ -1,23 +1,2 @@
-{"name": "www.coep.org.in", "type": 1, "class": 1, "ttl": 1298, "toe": 1636014517, "data": "210.212.183.5"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "98.137.11.164"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "74.6.231.20"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "74.6.231.21"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "98.137.11.163"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "74.6.143.25"}
-{"name": "yahoo.com", "type": 1, "class": 1, "ttl": 572, "toe": 1636014572, "data": "74.6.143.26"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "172.217.27.206"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.251.42.78"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.251.42.46"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.251.42.14"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.192.142"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.192.110"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.192.78"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.192.46"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.192.14"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "172.217.166.78"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.183.78"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.183.110"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "172.217.160.174"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "216.58.196.78"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.183.46"}
-{"name": "www.youtube.com", "type": 1, "class": 1, "ttl": 101, "toe": 1636015125, "data": "142.250.76.206"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1078, "toe": 1636053009, "data": "98.137.11.163"}
+{"query": "www.coep.org.in", "name": "www.coep.org.in", "type": 1, "class": 1, "ttl": 3600, "toe": 1636053268, "data": "210.212.183.5"}
