@@ -19,7 +19,7 @@ def data_packet_dns(data):
     ra = (flags & 128) != 0
     z = (flags & 112) >> 4
     rcode = flags & 15
-    return queries, response, authority, additional, rcode, data[12:]
+    return queries, response, authority, additional, rcode
     
 def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 	if(recurse == 1):
@@ -45,8 +45,38 @@ def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 	#print('query is', query)
 	return query
 	
+def str_from_pointer(response, p):
+	res = ""
+	for i in range(p,len(response)-p):
+		x = response[i]
+		if x == 0:
+			return res
+		if x in range(0, 16):
+			res += "."
+		else:
+			res += chr(response[i])
+
 def get_ipv4(response,start):
+	hostname,t,c = get_query_details(response[:start])
 	if(response[start+3] == 1):#type A response
+		#name
+		res = ""
+		if(response[start] == 192):
+			if(response[start+1] == 12):
+				res = hostname
+			else:
+				name_pointer = response[start+1]
+				length = response[name_pointer - 1]
+				for i in range (name_pointer+1,name_pointer+length):
+					x = response[i]
+					if x == 192:
+						res += str_from_pointer(response, response[i+1])
+						i+=1
+					if x in range(0, 16):
+						res += "."
+					else:
+						res += chr(response[i])
+
 		start += 12 #points to start of ip address
 		ip = response[start:start+4]
 		ipv4 = ""
@@ -54,7 +84,7 @@ def get_ipv4(response,start):
 			ipv4 += str(ip[j])
 			if(j != 3):
 				ipv4 += "."
-		return ipv4
+		return res,ipv4
 
 def get_ipv6(reply,start):
 	beg = start+12

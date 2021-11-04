@@ -4,10 +4,11 @@ sock.bind(('127.0.0.1',53))
 sock2 = socket(AF_INET, SOCK_DGRAM)
 
 def entry_cache(query, response, start, number_response):
+	hostname,t,c = get_query_details(query)
 	try:
 		print("...Writing to cache")
 		with open("cache.json", 'a') as fp:
-			name,c,t = get_query_details(query)
+			#name,c,t = get_query_details(query)
 			for i in range(number_response):
 				type = response[start+3]
 				clas = response[start+5]
@@ -18,13 +19,13 @@ def entry_cache(query, response, start, number_response):
 				length = response[start+11]
 				#toe=time of entry
 				if type == 1:
-					data = get_ipv4(response,start)
-					record = {"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					name,data = get_ipv4(response,start)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
 				elif type == 28:
 					data = get_ipv6(response,start)
-					record = {"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
 					
@@ -38,8 +39,8 @@ def lookup_cache(name, type, clas):
 	with open("cache.json", 'r') as fp:
 		for line in fp.readlines():
 			dct = json.loads(line)
-			if(dct['name'] == name and dct['type'] == type and dct['class'] == clas and int(round(time.time()))< dct['toe']+dct['ttl']):
-				list.append(dct["data"])
+			if(dct['query'] == name and dct['type'] == type and dct['class'] == clas and int(round(time.time()))< dct['toe']+dct['ttl']):
+				list.append((dct["name"],dct["data"]))
 	return list
 	
 def update_cache():
@@ -58,12 +59,13 @@ def dns_response(ip,query):
 	list = []# to contain servers ip from root
 	sock2.sendto(query, (ip, 53))
 	response, addr2 = sock2.recvfrom(2048)
-	number_queries, number_response, number_authority, number_additional, rcode, response = data_packet_dns(response)
-		
+	number_queries, number_response, number_authority, number_additional, rcode= data_packet_dns(response)
+	
+	start = len(query) - 12	
 	if(number_response):
 		entry_cache(query, response, len(query), number_response)
 		return response,addr2,True
-		
+	response = response[12:] #removing headers
 	#start of authoritative answer	
 	for i in range(number_authority):
 		length = start + 10
@@ -135,7 +137,7 @@ def main():
 		rd = (flags & 256) != 0
 		if(rd == 1):
 			#recursive
-			print("***Recusive Query***")
+			print("***Recursive Query***")
 			dns = open_resolv()
 			sock2.sendto(query, (dns, 53))
 			response, addr2 = sock2.recvfrom(2048)

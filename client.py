@@ -3,16 +3,17 @@ from library import *
 server = '127.0.0.1'
 #DNS server runs on port 53
 serverPort = 53
-    
-def getip(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
+
+def getip(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
 	if _type=='A':
-		start = len(query) - 12#start of answer
+		start = len(query)#start of answer
 		for i in range(number_response):
-			ip = get_ipv4(reply,start)
-			if reply[start+3] == 1:
-				print("Name:\t",hostname)
-				print("Address: ",ip)
+			if(reply[start+3] == 1):#A type query
+				name,ip = get_ipv4(reply,start)
+				if reply[start+3] == 1:
+					print("Name:\t",name)
+					print("Address: ",ip)
 			lent = reply[start+11]
 			start += lent + 12
 		
@@ -23,8 +24,10 @@ def getip(query,_type,hostname):
 			print("Address: ",ip)
 			start +=28
 
-def type_NS(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)	
+def type_NS(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)	
+	reply = reply[12:]
+	start = len(query) -12
 	y = 0
 	k = reply[start+y+11] #length
 	beg = start+y+12
@@ -56,8 +59,10 @@ def type_NS(query,_type,hostname):
 			print(hostname,"\tnameserver = ",res+".")
 		y+=12+length
          
-def type_MX(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
+def type_MX(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
+	reply = reply[12:]
+	start = len(query) -12
 	y = 0
 	k = reply[start+y+11] - 2 #length (excluding preference)
 	beg = start+y+14
@@ -97,8 +102,10 @@ def type_MX(query,_type,hostname):
 		y+=14+length
 
 
-def type_CNAME(query,_type,hostname):
-	number_queries, number_response, number_authority, number_additional, rcode, reply,start = send(query,hostname)
+def type_CNAME(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
+	reply = reply[12:]
+	start = len(query) -12
 	y = 0
 	beg = start+12
 	for i in range(0,number_response):
@@ -126,61 +133,69 @@ def type_CNAME(query,_type,hostname):
 		print(hostname,"\tcanonical name = "+res+"")
 		y+=12+length	
 	
-def send(query,hostname):
-	rcode,retry,flag =1,0,0
+def send(query,hostname,timeout):
+	rcode,flag =1,0
 	sock = socket(AF_INET, SOCK_DGRAM)
-	while rcode != 0 and retry < 10:
-		if(retry != 0):
-			print("**Retrying**")
-		sock.sendto(query, (server, serverPort))
+	sock.sendto(query, (server, serverPort))
+	sock.settimeout(timeout)
+	try:
 		reply, addr = sock.recvfrom(2048)
-		try:
-			#data from cache
-			lst = reply.decode()
-			lst = eval(lst)# Convert decoded data into list
-			if(lst[0] =='found'):
-				lst = lst[1]
-			print("From cache")
-			for i in lst:
-				print("Name:\t",hostname)
-				print("Address: ",i)
-			flag = 1
-		except:
-			pass
-		if flag == 1:#if in cache
-			sys.exit()
-		number_queries, number_response, number_authority, number_additional, rcode, reply = data_packet_dns(reply)
-		retry += 1
+	except Exception as e:#timeout
+		print(";; connection timed out; no servers could be reached")
+		sys.exit()
+	try:
+		#data from cache
+		lst = reply.decode()
+		lst = eval(lst)# Convert decoded data into list
+		if(lst[0] =='found'):
+			lst = lst[1]
+		print("From cache")
+		for i in lst:
+			print("Name:\t",i[0])
+			print("Address: ",i[1])
+		flag = 1
+	except:
+		pass
+	try:
+		flag = reply.decode()#if cannot resolve flag = -1
+	except:
+		pass
+	if (flag == 1):#if in cache
+		sys.exit()
+	if(flag == '-1'):
+		print("** server can't find", hostname,":No answer")
+		sys.exit()
+	number_queries, number_response, number_authority, number_additional, rcode = data_packet_dns(reply)
+	
 	if rcode != 0:
 		print("** server can't find", hostname,":No answer")
-		sys.exit('-');
+		sys.exit();
 	#if rcode is zero then ok
-	start = len(query) - 12#start of answer
-	return number_queries, number_response, number_authority, number_additional, rcode, reply,start
+	return number_queries, number_response, number_authority, number_additional, rcode, reply
 	
 
-def finalCall(hostname,type,recurse):
-	print("Server:		-----")#127.0.0.53
-	print("Address:	-----#53")
-	print("\nNon-authoritative answer:")
+def finalCall(hostname,type,recurse,timeout):
+	print("Server:		127.0.0.1")
+	print("Address:	127.0.0.1#53")
 	
 	query = constructQuery(hostname,type,"IN",recurse)
 	if type =='A':
-		ip= getip(query,'A',hostname)
+		ip= getip(query,'A',hostname,timeout)
 	if type =='AAAA':
-		ip= getip(query,"AAAA",hostname)
+		ip= getip(query,"AAAA",hostname,timeout)
 	if type =='NS':
-		ip= type_NS(query,"NS",hostname)
+		ip= type_NS(query,"NS",hostname,timeout)
 	if type =='MX':	
 		type_MX(query,"MX",hostname)
 	if type =='CNAME':	
-		type_CNAME(query,"CNAME",hostname)
+		type_CNAME(query,"CNAME",hostname,timeout)
 			
 			
 def main():
 	hostname = sys.argv[len(sys.argv)-1]
 	type = 'A'#default
 	recurse = 1 #default
+	timeout = 30
 	for i in range(1,len(sys.argv)-1):
 		if(sys.argv[i] == "norecurse"):
 			recurse = 0 #iterative
@@ -190,11 +205,17 @@ def main():
 		if (x=="-type"):
 			type = y
 		elif (x=="-timeout"):
-			timeout = y
+			timeout = float(y);  
 
-	finalCall(hostname,type,recurse)
+	finalCall(hostname,type,recurse,timeout)
 
 if __name__ == "__main__":
 	main()
+
+#name in ip 
+#additional records
+#reverse ip
+
+
 
 
