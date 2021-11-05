@@ -18,16 +18,26 @@ def entry_cache(query, response, start, number_response):
 				toe = int(round(time.time()))
 				length = response[start+11]
 				#toe=time of entry
-				if type == 1:
+				if type == 1:#A
 					name,data = get_ipv4(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 28:
-					data = get_ipv6(response,start)
+				elif type == 28:#AAAA
+					name,data = get_ipv6(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
+				elif type == 2:#NS
+					name,data = get_NS(response,start)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					json.dump(record,fp)
+					fp.write('\n')	
+				elif type == 15:#MX
+					name,data = get_MX(response,start)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					json.dump(record,fp)
+					fp.write('\n')	
 					
 				start += length + 12
 	except:

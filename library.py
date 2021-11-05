@@ -46,52 +46,63 @@ def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 	return query
 	
 def str_from_pointer(response, p):
+	i = 0
+	while(response[i]!=192 and response[i+1]!=12):#start of answer
+		start = i+1
+		i+=1
+		
 	res = ""
-	for i in range(p,len(response)-p):
-		x = response[i]
-		if x == 0:
-			return res
-		if x in range(0, 16):
-			res += "."
-		else:
-			res += chr(response[i])
+	if p < start:
+		for i in range(p,len(response)-p):
+			x = response[i]
+			if x == 192:
+				res += str_from_pointer(response, response[i+1])
+				i+=1
+			elif x == 0:
+				#print("a  ",response[p:i])
+				break
+			elif x in range(1, 16):
+				res += "."
+			else:
+				res += chr(response[i])
+	else:
+		length = response[start+11]
+		#print("b  ",response[p:p+length])
+		for i in range (p,start+12+length):
+			x = response[i]
+			if x == 192:
+				res += str_from_pointer(response, response[i+1])
+				i+=1
+			elif x in range(0, 16):
+				res += "."
+			else:
+				res += chr(response[i])
+	return res
 
 def get_ipv4(response,start):
-	hostname,t,c = get_query_details(response[:start])
-	if(response[start+3] == 1):#type A response
-		#name
-		res = ""
-		if(response[start] == 192):
-			if(response[start+1] == 12):
-				res = hostname
-			else:
-				name_pointer = response[start+1]
-				length = response[name_pointer - 1]
-				for i in range (name_pointer+1,name_pointer+length):
-					x = response[i]
-					if x == 192:
-						res += str_from_pointer(response, response[i+1])
-						i+=1
-					if x in range(0, 16):
-						res += "."
-					else:
-						res += chr(response[i])
+	#name
+	res = ""
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
 
-		start += 12 #points to start of ip address
-		ip = response[start:start+4]
-		ipv4 = ""
-		for j in range(0,4):
-			ipv4 += str(ip[j])
-			if(j != 3):
-				ipv4 += "."
-		return res,ipv4
+	start += 12 #points to start of ip address
+	ip = response[start:start+4]
+	ipv4 = ""
+	for j in range(0,4):
+		ipv4 += str(ip[j])
+		if(j != 3):
+			ipv4 += "."
+	return res[1:],ipv4
 
-def get_ipv6(reply,start):
+def get_ipv6(response,start):
+	#name
+	res = ""
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
+					
 	beg = start+12
 	#last 16 bytes contains ip address
-	ip = reply[beg:beg+16]
-	#ip address in bytes
-	#convert byte to string
+	ip = response[beg:beg+16]
 	ipv6 = ""
 	for i in range(0,16,2):
 		a = str(hex(ip[i])).split('0x',1)[1]
@@ -102,8 +113,48 @@ def get_ipv6(reply,start):
 		if(i != 14):
 			ipv6 += ":"
 	#ipv6 has ip address
-	return ipv6	
+	return res[1:],ipv6	
 		
+def get_NS(response,start):
+	#nameserver
+	res="";ns="";
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
+					
+	length = response[start+11]		
+	start = start+12
+	for i in range(start+1,start+length):
+		x = response[i]
+		if x == 192:
+			ns += str_from_pointer(response, response[i+1])
+			i+=1
+		elif x in range(0, 16):
+			ns += "."
+		else:
+			ns += chr(response[i])
+	return res[1:],ns
+
+def get_MX(response,start):
+	#nameserver
+	res="";mx="";
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
+					
+	length = response[start+11]
+	a = response[start+12]
+	b = response[start+13]
+	preference = int(a)*16*16 + int(b)
+	start = start+14
+	for i in range(start,start+length-2):
+		x = response[i]
+		if x == 192:
+			mx += str_from_pointer(response, response[i+1])
+			i+=1
+		elif x in range(0, 16):
+			mx += "."
+		else:
+			mx += chr(response[i])
+	return res[1:],str(preference)+" "+mx[1:]		
 
 def get_query_details(query):
 	clas = query[len(query) - 1]
