@@ -33,9 +33,26 @@ def entry_cache(query, response, start, number_response):
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')	
+				elif type == 5:#CNAME
+					name,data = get_NS(response,start)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					json.dump(record,fp)
+					fp.write('\n')
+				elif type == 6:#SOA
+					name,pns,ram,sn,rfi,rti,el,mt = get_SOA(response,start)
+					data = [pns,ram,sn,rfi,rti,el,mt]
+					print(data)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					json.dump(record,fp)
+					fp.write('\n')
 				elif type == 15:#MX
 					name,data = get_MX(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
+					json.dump(record,fp)
+					fp.write('\n')
+				elif type == 16:#TXT
+					name,txt = get_TXT(response,start)
+					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":txt}
 					json.dump(record,fp)
 					fp.write('\n')	
 					
@@ -50,7 +67,7 @@ def lookup_cache(name, type, clas):
 		for line in fp.readlines():
 			dct = json.loads(line)
 			if(dct['query'] == name and dct['type'] == type and dct['class'] == clas and int(round(time.time()))< dct['toe']+dct['ttl']):
-				list.append((dct["name"],dct["data"]))
+				list.append((dct["name"],dct["type"],dct["data"]))
 	return list
 	
 def update_cache():

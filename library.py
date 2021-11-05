@@ -42,6 +42,10 @@ def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 		query = query + bytes("\x00\x0f" + "\x00\x01", 'utf-8') #type MX, class IN
 	elif type=='CNAME'and clas=="IN":
 		query = query + bytes("\x00\x05" + "\x00\x01", 'utf-8') #type CNAME, class IN
+	elif type=='SOA'and clas=="IN":
+		query = query + bytes("\x00\x06" + "\x00\x01", 'utf-8') #type SOA, class IN
+	elif type=='TXT'and clas=="IN":
+		query = query + bytes("\x00\x10" + "\x00\x01", 'utf-8') #type TXT, class IN
 	#print('query is', query)
 	return query
 	
@@ -59,7 +63,6 @@ def str_from_pointer(response, p):
 				res += str_from_pointer(response, response[i+1])
 				i+=1
 			elif x == 0:
-				#print("a  ",response[p:i])
 				break
 			elif x in range(1, 16):
 				res += "."
@@ -67,7 +70,6 @@ def str_from_pointer(response, p):
 				res += chr(response[i])
 	else:
 		length = response[start+11]
-		#print("b  ",response[p:p+length])
 		for i in range (p,start+12+length):
 			x = response[i]
 			if x == 192:
@@ -115,7 +117,7 @@ def get_ipv6(response,start):
 	#ipv6 has ip address
 	return res[1:],ipv6	
 		
-def get_NS(response,start):
+def get_NS(response,start):#also same for CNAME
 	#nameserver
 	res="";ns="";
 	if(response[start] == 192):
@@ -123,7 +125,7 @@ def get_NS(response,start):
 					
 	length = response[start+11]		
 	start = start+12
-	for i in range(start+1,start+length):
+	for i in range(start,start+length):
 		x = response[i]
 		if x == 192:
 			ns += str_from_pointer(response, response[i+1])
@@ -132,7 +134,7 @@ def get_NS(response,start):
 			ns += "."
 		else:
 			ns += chr(response[i])
-	return res[1:],ns
+	return res[1:],ns[1:]
 
 def get_MX(response,start):
 	#nameserver
@@ -155,6 +157,67 @@ def get_MX(response,start):
 		else:
 			mx += chr(response[i])
 	return res[1:],str(preference)+" "+mx[1:]		
+
+def get_TXT(response,start):#also same for CNAME
+	#nameserver
+	res="";txt="";
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
+					
+	length = response[start+11]		
+	start = start+12
+	for i in range(start+1,start+length):
+		x = response[i]
+		if x == 192:
+			txt += str_from_pointer(response, response[i+1])
+			i+=1
+		elif x in range(0, 16):
+			txt += "."
+		else:
+			txt += chr(response[i])
+	return res[1:],txt
+
+def get_time(response,start):
+	t1 = response[start]; t2 = response[start+1]
+	t3 = response[start+2]; t4 = response[start+3]
+	ttl = int(t1)*(16**6) + int(t2)*(16**4) + int(t3)*(16**2)+int(t4)
+	return ttl
+
+def get_SOA(response,start):
+	res="";
+	if(response[start] == 192):
+		res += str_from_pointer(response, response[start+1])
+					
+	length = response[start+11]		
+	start = start+12
+	pns = "" #primary name server
+	ram = "" #responsible authority's mailbox
+	mt = get_time(response,start+length-4)#minimum ttl
+	el = get_time(response,start+length-8)#expire limit
+	rti = get_time(response,start+length-12)#retry interval
+	rfi = get_time(response,start+length-16)#refresh interval
+	sn = get_time(response,start+length-20)#serial number
+	for i in range(start,start+length-20):
+		x = response[i]
+		if x == 192:
+			pns += str_from_pointer(response, response[i+1])
+			i+=2
+			break
+		elif x in range(0, 16):
+			pns += "."
+		else:
+			pns += chr(response[i])
+
+	for j in range(i,start+length-20):
+		x = response[j]
+		if x == 192:
+			ram += str_from_pointer(response, response[j+1])
+			break
+		elif x in range(0, 16):
+			ram += "."
+		else:
+			ram += chr(response[j])
+	return res[1:],pns[1:],ram[1:],sn,rfi,rti,el,mt
 
 def get_query_details(query):
 	clas = query[len(query) - 1]

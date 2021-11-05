@@ -45,37 +45,35 @@ def type_MX(query,_type,hostname,timeout):
 		lent = reply[start+11]
 		start += lent + 12
 
-
 def type_CNAME(query,_type,hostname,timeout):
 	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	reply = reply[12:]
-	start = len(query) -12
-	y = 0
-	beg = start+12
-	for i in range(0,number_response):
-		length = reply[start+11+y]
-		res =""
-		for i in range (beg+y,beg+y+length-1):
-			x = reply[i]
-			if x == 192:#next is pointer
-				pointer = reply[i+1] - 11 #-12
-				j = pointer
-				while(1):
-					k = reply[j]
-					if k == 0:
-						break;
-					if k in range(1, 16):
-						res += "."
-					else:
-						res += chr(reply[j])
-					j += 1
-					
-			elif x in range(0, 16):
-				res += "."
-			else:
-				res += chr(reply[i])
-		print(hostname,"\tcanonical name = "+res+"")
-		y+=12+length	
+	start = len(query)
+	for i in range(number_response):
+		if(reply[start+3] == 5):#CNAME type query
+			name,cname = get_NS(reply,start)
+			print(name,"\tcanonical name = ",cname)
+		lent = reply[start+11]
+		start += lent + 12
+
+def type_SOA(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
+	start = len(query)
+	for i in range(number_response):
+		if(reply[start+3] == 6):#SOA type query
+			name,pns,ram,sn,rfi,rti,el,mt = get_SOA(reply,start)
+			print(name,"\n\torigin = ",pns, "\n\tmail addr = ",ram, "\n\tserial = ",sn, "\n\trefresh = ",rfi, "\n\tretry = ",rti, "\n\texpire = ",el, "\n\tminimum = ",mt)
+		lent = reply[start+11]
+		start += lent + 12
+
+def type_TXT(query,_type,hostname,timeout):
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
+	start = len(query)
+	for i in range(number_response):
+		if(reply[start+3] == 16):#CNAME type query
+			name,text = get_TXT(reply,start)
+			print(name,"\ttext = ",text)
+		lent = reply[start+11]
+		start += lent + 12
 	
 def send(query,hostname,timeout):
 	rcode,flag =1,0
@@ -95,8 +93,20 @@ def send(query,hostname,timeout):
 			lst = lst[1]
 		print("From cache")
 		for i in lst:
-			print("Name:\t",i[0])
-			print("Address: ",i[1])
+			if(i[1] == 1 or i[1] == 28):
+				print("Name:\t",i[0])
+				print("Address: ",i[2])
+			elif(i[1] == 2):
+				print(i[0],"\tnameserver = ",i[2])
+			elif(i[1] == 15):
+				print(i[0],"\tmail exchanger = ",i[2])
+			elif(i[1] == 16):
+				print(i[0],"\ttext = ",i[2])
+			elif(i[1] == 5):
+				print(i[0],"\tcanonical name = ",i[2])
+			elif(i[1] == 6):
+				print(i[0],"\n\torigin = ",i[2][0], "\n\tmail addr = ",i[2][1], "\n\tserial = ",i[2][2], "\n\trefresh = ",i[2][3], "\n\tretry = ",i[2][4], "\n\texpire = ",i[2][5], "\n\tminimum = ",i[2][6])
+			
 		flag = 1
 	except:
 		pass
@@ -124,16 +134,19 @@ def finalCall(hostname,type,recurse,timeout):
 	
 	query = constructQuery(hostname,type,"IN",recurse)
 	if type =='A':
-		ip= type_A(query,'A',hostname,timeout)
-	if type =='AAAA':
-		ip= type_A(query,"AAAA",hostname,timeout)
-	if type =='NS':
-		ip= type_NS(query,"NS",hostname,timeout)
-	if type =='MX':	
+		type_A(query,'A',hostname,timeout)
+	elif type =='AAAA':
+		type_A(query,"AAAA",hostname,timeout)
+	elif type =='NS':
+		type_NS(query,"NS",hostname,timeout)
+	elif type =='MX':	
 		type_MX(query,"MX",hostname,timeout)
-	if type =='CNAME':	
+	elif type =='CNAME':	
 		type_CNAME(query,"CNAME",hostname,timeout)
-			
+	elif type =='SOA':	
+		type_SOA(query,"SOA",hostname,timeout)
+	elif type =='TXT':	
+		type_TXT(query,"TXT",hostname,timeout)
 			
 def main():
 	hostname = sys.argv[len(sys.argv)-1]
