@@ -4,87 +4,62 @@ server = '127.0.0.1'
 #DNS server runs on port 53
 serverPort = 53
 
-def type_A(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)#start of answer
-	if _type=='A':
-		for i in range(number_response):
-			if(reply[start+3] == 1):#A type query
-				name,ip = get_ipv4(reply,start)
-				print("Name:\t",name)
-				print("Address: ",ip)
-			lent = reply[start+11]
-			start += lent + 12
-		
-	elif _type=="AAAA":
-		for i in range(0,number_response):
-			if(reply[start+3] == 28):#AAAA type query
-				name,ip = get_ipv6(reply,start)
-				print("Name:\t",name)
-				print("Address: ",ip)
-			lent = reply[start+11]
-			start += lent + 12
-
-def type_NS(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)
-	for i in range(number_response):
-		if(reply[start+3] == 2):#NS type query
-			name,ns = get_NS(reply,start)
-			print(name,"\tnameserver = ",ns)
-		lent = reply[start+11]
-		start += lent + 12
-         
-def type_MX(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)
-	for i in range(number_response):
-		if(reply[start+3] == 15):#MX type query
-			name,mx = get_MX(reply,start)
-			print(name,"\tmail exchanger = ",mx)
-		lent = reply[start+11]
-		start += lent + 12
-
-def type_CNAME(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)
-	for i in range(number_response):
-		if(reply[start+3] == 5):#CNAME type query
-			name,cname = get_NS(reply,start)
-			print(name,"\tcanonical name = ",cname)
-		lent = reply[start+11]
-		start += lent + 12
-
-def type_SOA(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)
-	for i in range(number_response):
-		if(reply[start+3] == 6):#SOA type query
-			name,pns,ram,sn,rfi,rti,el,mt = get_SOA(reply,start)
-			print(name,"\n\torigin = ",pns, "\n\tmail addr = ",ram, "\n\tserial = ",sn, "\n\trefresh = ",rfi, "\n\tretry = ",rti, "\n\texpire = ",el, "\n\tminimum = ",mt)
-		lent = reply[start+11]
-		start += lent + 12
-
-def type_TXT(query,_type,hostname,timeout):
-	number_queries, number_response, number_authority, number_additional, rcode, reply= send(query,hostname,timeout)
-	start = len(query)
-	for i in range(number_response):
-		if(reply[start+3] == 16):#CNAME type query
-			name,text = get_TXT(reply,start)
-			print(name,"\ttext = ",text)
-		lent = reply[start+11]
-		start += lent + 12
-	
-def send(query,hostname,timeout):
-	rcode,flag =1,0
+def parse_response(query,hostname,timeout,retry):
 	sock = socket(AF_INET, SOCK_DGRAM)
 	sock.sendto(query, (server, serverPort))
+	number_queries, number_response, number_authority, number_additional, rcode, reply= send(sock,query,hostname,timeout,retry,1)
+	start = len(query)#start of answer
+	for i in range(number_response):
+		if(reply[start+3] == 1):#A type query
+			name,ip = get_ipv4(reply,start)
+			print("Name:\t",name)
+			print("Address: ",ip)
+		
+		elif(reply[start+3] == 28):#AAAA type query
+			name,ip = get_ipv6(reply,start)
+			print("Name:\t",name)
+			print("Address: ",ip)
+		
+		elif(reply[start+3] == 2):#NS type query
+			name,ns = get_NS(reply,start)
+			print(name,"\tnameserver = ",ns)
+			
+		elif(reply[start+3] == 5):#CNAME type query
+			name,cname = get_NS(reply,start)
+			print(name,"\tcanonical name = ",cname)
+		
+		elif(reply[start+3] == 6):#SOA type query
+			name,pns,ram,sn,rfi,rti,el,mt = get_SOA(reply,start)
+			print(name,"\n\torigin = ",pns, "\n\tmail addr = ",ram, "\n\tserial = ",sn, "\n\trefresh = ",rfi, "\n\tretry = ",rti, "\n\texpire = ",el, "\n\tminimum = ",mt)
+			
+		elif(reply[start+3] == 15):#MX type query
+			name,mx = get_MX(reply,start)
+			print(name,"\tmail exchanger = ",mx)
+		
+		elif(reply[start+3] == 16):#TXT type query
+			name,text = get_TXT(reply,start)
+			print(name,"\ttext = ",text)
+		
+		elif(reply[start+3] == 12):#PTR type query
+			addr,name = get_PTR(reply,start)
+			print(addr,"\tname = ",name)
+			
+		lent = reply[start+11]
+		start += lent + 12
+
+def send(sock,query,hostname,timeout,retry,current_retry):
+	rcode,flag =1,0
 	sock.settimeout(timeout)
 	try:
 		reply, addr = sock.recvfrom(2048)
 	except Exception as e:#timeout
-		print(";; connection timed out; no servers could be reached")
-		sys.exit()
+		if(current_retry < retry):
+			print("**Retrying(doubling timeout))**")
+			#timeout doubles
+			return send(sock, query,hostname,timeout*2,retry,current_retry+1)
+		else:
+			print(";; connection timed out; no servers could be reached")
+			sys.exit()
 	try:
 		#data from cache
 		lst = reply.decode()
@@ -94,8 +69,7 @@ def send(query,hostname,timeout):
 		print("From cache")
 		for i in lst:
 			if(i[1] == 1 or i[1] == 28):
-				print("Name:\t",i[0])
-				print("Address: ",i[2])
+				print("Name:\t",i[0],"\nAddress: ",i[2])
 			elif(i[1] == 2):
 				print(i[0],"\tnameserver = ",i[2])
 			elif(i[1] == 15):
@@ -128,51 +102,40 @@ def send(query,hostname,timeout):
 	return number_queries, number_response, number_authority, number_additional, rcode, reply
 	
 
-def finalCall(hostname,type,recurse,timeout):
+def finalCall(hostname,type,recurse,timeout,retry):
 	print("Server:		127.0.0.1")
 	print("Address:	127.0.0.1#53")
-	
+	if type == 'PTR':
+		hostname = ipaddress.ip_address(hostname).reverse_pointer
 	query = constructQuery(hostname,type,"IN",recurse)
-	if type =='A':
-		type_A(query,'A',hostname,timeout)
-	elif type =='AAAA':
-		type_A(query,"AAAA",hostname,timeout)
-	elif type =='NS':
-		type_NS(query,"NS",hostname,timeout)
-	elif type =='MX':	
-		type_MX(query,"MX",hostname,timeout)
-	elif type =='CNAME':	
-		type_CNAME(query,"CNAME",hostname,timeout)
-	elif type =='SOA':	
-		type_SOA(query,"SOA",hostname,timeout)
-	elif type =='TXT':	
-		type_TXT(query,"TXT",hostname,timeout)
+	types_implemented = ['A','AAAA','NS','MX','CNAME','SOA','TXT','PTR']
+	if type in types_implemented:
+		parse_response(query,hostname,timeout,retry)
+	else:
+		print("Not Implemted")
 			
 def main():
 	hostname = sys.argv[len(sys.argv)-1]
 	type = 'A'#default
 	recurse = 1 #default
-	timeout = 30
+	timeout = 5
+	retry = 4
 	for i in range(1,len(sys.argv)-1):
 		if(sys.argv[i] == "norecurse"):
 			recurse = 0 #iterative
 			continue
 		x = sys.argv[i].split('=',1)[0]
 		y = sys.argv[i].split('=',1)[1]
-		if (x=="-type"):
+		if(x=="-type"):
 			type = y
-		elif (x=="-timeout"):
-			timeout = float(y);  
-
-	finalCall(hostname,type,recurse,timeout)
+		elif(x=="-timeout"):
+			timeout = float(y);
+		elif(x == "-retry"):
+			retry = int(y)
+			
+	finalCall(hostname,type,recurse,timeout,retry)
 
 if __name__ == "__main__":
 	main()
-
-#name in ip 
-#additional records
-#reverse ip
-
-
 
 

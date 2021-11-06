@@ -6,9 +6,10 @@ sock2 = socket(AF_INET, SOCK_DGRAM)
 def entry_cache(query, response, start, number_response):
 	hostname,t,c = get_query_details(query)
 	try:
-		print("...Writing to cache")
 		with open("cache.json", 'a') as fp:
-			#name,c,t = get_query_details(query)
+			types = ['A','AAAA','NS','MX','CNAME','SOA','TXT']
+			if t in types:
+				print("...Writing to cache")
 			for i in range(number_response):
 				type = response[start+3]
 				clas = response[start+5]
@@ -18,46 +19,46 @@ def entry_cache(query, response, start, number_response):
 				toe = int(round(time.time()))
 				length = response[start+11]
 				#toe=time of entry
-				if type == 1:#A
+				if type == 1 and t == 1:#A
 					name,data = get_ipv4(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 28:#AAAA
+				elif type == 28 and t == 28:#AAAA
 					name,data = get_ipv6(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 2:#NS
+				elif type == 2 and t == 2:#NS
 					name,data = get_NS(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')	
-				elif type == 5:#CNAME
+				elif type == 5 and t == 5:#CNAME
 					name,data = get_NS(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 6:#SOA
+				elif type == 6 and t == 6:#SOA
 					name,pns,ram,sn,rfi,rti,el,mt = get_SOA(response,start)
 					data = [pns,ram,sn,rfi,rti,el,mt]
-					print(data)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 15:#MX
+				elif type == 15 and t == 15:#MX
 					name,data = get_MX(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":data}
 					json.dump(record,fp)
 					fp.write('\n')
-				elif type == 16:#TXT
+				elif type == 16 and t == 16:#TXT
 					name,txt = get_TXT(response,start)
 					record = {"query":hostname,"name":name,"type":type,"class":clas,"ttl":ttl,"toe":toe,"data":txt}
 					json.dump(record,fp)
 					fp.write('\n')	
 					
 				start += length + 12
-	except:
+	except Exception as e:
+		print(e)
 		print("..unable to write to cache")
 
 def lookup_cache(name, type, clas):
@@ -84,15 +85,14 @@ def update_cache():
 	
 def dns_response(ip,query):
 	list = []# to contain servers ip from root
+	sock2.settimeout(6)
 	sock2.sendto(query, (ip, 53))
 	response, addr2 = sock2.recvfrom(2048)
 	number_queries, number_response, number_authority, number_additional, rcode= data_packet_dns(response)
-	
-	start = len(query) - 12	
+	start = len(query)
 	if(number_response):
 		entry_cache(query, response, len(query), number_response)
 		return response,addr2,True
-	response = response[12:] #removing headers
 	#start of authoritative answer	
 	for i in range(number_authority):
 		length = start + 10
@@ -103,25 +103,17 @@ def dns_response(ip,query):
 	#now start points to additional records
 	for i in range(number_additional):
 		if(response[start+3] == 1):#type A response
-			start += 12 #points to start of ip address
-			ip = response[start:start+4]
-			ipv4 = ""
-			for j in range(0,4):
-				ipv4 += str(ip[j])
-				if(j != 3):
-					ipv4 += "."
-			list.append(ipv4);
-			start += 4;
-		else:
-			lent = response[start+11]
-			start += lent + 12
+			name, ip = get_ipv4(response,start)
+			list.append((name,ip))
+		lent = response[start+11]
+		start += lent + 12
 			
 	return list, addr2, False	
 
 def iterate_query(root,query):#for iterative query
 	for r in root:
-		print("sending query to ", r)
-		res, addr, got = dns_response(r,query)
+		print("sending query to ", r[0], r[1])
+		res, addr, got = dns_response(r[1],query)
 		if (got == True):#found
 			return res
 		if len(res) == 0:
@@ -129,7 +121,7 @@ def iterate_query(root,query):#for iterative query
 		else:
 			return iterate_query(res, query)
 	return -1
-
+			
 def open_resolv():
 	try:
 		resolvconf = open(os.path.abspath("/etc/resolv.conf"),'r')
@@ -151,6 +143,7 @@ def main():
 	th = Thread(target = update_cache)
 	th.start()
 	while True:
+		print("waiting for query...")
 		query, addr = sock.recvfrom(2048)
 		#look cache
 		name,type,clas = get_query_details(query)
@@ -176,9 +169,12 @@ def main():
 		else:
 			#iterative
 			print("***Iterative Query***")
-			root = ['199.7.83.42']#ICANN server
+			root = [("ICANN",'199.7.83.42')]#ICANN server
 			got = False
-			response = iterate_query(root, query)
+			try:
+				response = iterate_query(root, query)
+			except:
+				response = -1
 			if(response == -1):
 				print("Cannot resolve");
 				sock.sendto("-1".encode(),addr)
@@ -187,8 +183,6 @@ def main():
 				
 if __name__ == "__main__":
 	main()
-			
-			
 			
 			
 

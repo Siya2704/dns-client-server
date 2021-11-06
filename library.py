@@ -1,4 +1,4 @@
-import sys, struct, os.path, time, json
+import sys, struct, os.path, time, json,ipaddress
 from socket import*
 from threading import Thread
 
@@ -46,9 +46,10 @@ def constructQuery(hostname, type, clas,recurse):#1 means recursion desired
 		query = query + bytes("\x00\x06" + "\x00\x01", 'utf-8') #type SOA, class IN
 	elif type=='TXT'and clas=="IN":
 		query = query + bytes("\x00\x10" + "\x00\x01", 'utf-8') #type TXT, class IN
-	#print('query is', query)
+	elif type=='PTR'and clas=="IN":
+		query = query + bytes("\x00\x0c" + "\x00\x01", 'utf-8') #type PTR, class IN
 	return query
-	
+
 def str_from_pointer(response, p):
 	i = 0
 	while(response[i]!=192 and response[i+1]!=12):#start of answer
@@ -218,6 +219,24 @@ def get_SOA(response,start):
 		else:
 			ram += chr(response[j])
 	return res[1:],pns[1:],ram[1:],sn,rfi,rti,el,mt
+
+def get_PTR(response,start):
+	addr="";name="";
+	if(response[start] == 192):
+		addr += str_from_pointer(response, response[start+1])
+					
+	length = response[start+11]		
+	start = start+12
+	for i in range(start,start+length):
+		x = response[i]
+		if x == 192:
+			name += str_from_pointer(response, response[i+1])
+			i+=1
+		elif x in range(0, 16):
+			name += "."
+		else:
+			name += chr(response[i])
+	return addr[1:],name[1:]
 
 def get_query_details(query):
 	clas = query[len(query) - 1]
