@@ -1,2 +1,54 @@
-{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1078, "toe": 1636053009, "data": "98.137.11.163"}
-{"query": "www.coep.org.in", "name": "www.coep.org.in", "type": 1, "class": 1, "ttl": 3600, "toe": 1636053268, "data": "210.212.183.5"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 1, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "212.0.212.211"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 28, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "2a02:a30:212:212:000:000:000:214"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 2, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "ns2.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 2, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "ns3.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 2, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "ns1.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 2, "class": 1, "ttl": 3600, "toe": 1636229664, "data": "ns4.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 16, "class": 1, "ttl": 3131, "toe": 1636229666, "data": "facebook-domain-verification=u7y41te6ne8arthunmvhiuwm2o8o9q"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 16, "class": 1, "ttl": 3131, "toe": 1636229666, "data": "google-site-verification=KKxpJg3jPKcvlJZiSJYeZiBGyZxfMvO2I09xZmobRI8"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 16, "class": 1, "ttl": 3131, "toe": 1636229666, "data": "facebook-domain-verification=rbbo2h41kyuxdgxu19n2qiz1x0pcq8"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 16, "class": 1, "ttl": 3131, "toe": 1636229666, "data": "MS=A123A1879733FD81478F7299B4CB413F86B6DC69"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 16, "class": 1, "ttl": 3131, "toe": 1636229666, "data": "v=spf1 mx a ~all"}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 15, "class": 1, "ttl": 3129, "toe": 1636229668, "data": "5 edge1.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 15, "class": 1, "ttl": 3129, "toe": 1636229668, "data": "5 edge2.moldtelecom.md."}
+{"query": "moldtelecom.md", "name": "moldtelecom.md", "type": 6, "class": 1, "ttl": 3600, "toe": 1636229669, "data": ["ns1.moldtelecom.md", "admin.mtc.md", 2021092301, 10800, 3600, 604800, 3600]}
+{"query": "yf1.yahoo.com", "name": "yf1.yahoo.com", "type": 1, "class": 1, "ttl": 86400, "toe": 1636229670, "data": "68.142.254.15"}
+{"query": "google.com", "name": "google.com", "type": 1, "class": 1, "ttl": 300, "toe": 1636229677, "data": "142.250.192.110"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:044:3507:000:000:000:8000"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:124:1507:000:000:000:f000"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:124:1507:000:000:000:f001"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:044:3507:000:000:000:8001"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:024:120d:000:000:001:001"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 28, "class": 1, "ttl": 1800, "toe": 1636229677, "data": "2001:4998:024:120d:000:000:001:000"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "74.6.231.21"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "98.137.11.164"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "98.137.11.163"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "74.6.143.26"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "74.6.231.20"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 1, "class": 1, "ttl": 1800, "toe": 1636229683, "data": "74.6.143.25"}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 2, "class": 1, "ttl": 172800, "toe": 1636229683, "data": "ns2.yahoo.com."}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 2, "class": 1, "ttl": 172800, "toe": 1636229683, "data": "ns5.yahoo.com."}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 2, "class": 1, "ttl": 172800, "toe": 1636229683, "data": "ns3.yahoo.com."}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 2, "class": 1, "ttl": 172800, "toe": 1636229683, "data": "ns4.yahoo.com."}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 2, "class": 1, "ttl": 172800, "toe": 1636229683, "data": "ns1.yahoo.com."}
+{"query": "yahoo.com", "name": "yahoo.com", "type": 6, "class": 1, "ttl": 1800, "toe": 1636229683, "data": ["ns1.yahoo.com", "hostmaster.yahoo-inc.com", 2021110518, 3600, 300, 1814400, 600]}
+{"query": "microsoft.com", "name": "microsoft.com", "type": 6, "class": 1, "ttl": 3600, "toe": 1636229684, "data": ["ns1-205.azure-dns.com", "azuredns-hostmaster.microsoft.com", 1, 3600, 300, 2419200, 300]}
+{"query": "www.youtube.com", "name": "www.youtube.com", "type": 5, "class": 1, "ttl": 86400, "toe": 1636229684, "data": "youtube-ui.l.google.com\u0018"}
+{"query": "www.shakthimaan.com", "name": "www.shakthimaan.com", "type": 5, "class": 1, "ttl": 3253, "toe": 1636229684, "data": "shakthimaan.com\u0010"}
+{"query": "gmail.com", "name": "gmail.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "30 alt3.gmail-smtp-in.l.google.com\u0012"}
+{"query": "gmail.com", "name": "gmail.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "40 alt4.gmail-smtp-in.l.google.com\u0012."}
+{"query": "gmail.com", "name": "gmail.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "20 alt2.gmail-smtp-in.l.google.com\u0012."}
+{"query": "gmail.com", "name": "gmail.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "5 gmail-smtp-in.l.google.com\u0012."}
+{"query": "gmail.com", "name": "gmail.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "10 alt1.gmail-smtp-in.l.google.com\u0012."}
+{"query": "coep.org.in", "name": "coep.org.in", "type": 2, "class": 1, "ttl": 3600, "toe": 1636229684, "data": "coepserver."}
+{"query": "apple.com", "name": "apple.com", "type": 1, "class": 1, "ttl": 900, "toe": 1636229684, "data": "17.253.144.10"}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 ma1-aaemail-dr-lapp03.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 ma1-aaemail-dr-lapp02.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 ma1-aaemail-dr-lapp01.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp45.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp44.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp35.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp34.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp24.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp15.apple.com."}
+{"query": "apple.com", "name": "apple.com", "type": 15, "class": 1, "ttl": 3600, "toe": 1636229685, "data": "10 rn-mailsvcp-ppex-lapp14.apple.com."}

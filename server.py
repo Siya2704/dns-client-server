@@ -143,7 +143,6 @@ def main():
 	th = Thread(target = update_cache)
 	th.start()
 	while True:
-		print("waiting for query...")
 		query, addr = sock.recvfrom(2048)
 		#look cache
 		name,type,clas = get_query_details(query)
