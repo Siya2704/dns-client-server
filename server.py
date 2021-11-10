@@ -111,12 +111,13 @@ def main():
 	th.start()
 	while True:
 		query, addr = sock.recvfrom(2048)
-		print("Query received: ",query)
+		print("\nQuery received: ",query,"\n")
 		#look cache
 		name,typ,clas,start = get_query_details(query)
 		x = lookup_cache(name, typ, clas,query)
 		if(x != 0):
 			print("**Found in Cache**")
+			print("\nRespoonse sent: ",x,"\n")
 			sock.sendto(x,addr)
 			continue
 		print("**Not Found in Cache**")
@@ -133,6 +134,7 @@ def main():
 			number_response = tuple_data_dns[3]
 			if number_response >0:
 				entry_cache(query, response, start, number_response)
+			print("\nResponse sent: ",response,"\n")
 			sock.sendto(response,addr)
 		else:
 			#iterative
@@ -148,6 +150,7 @@ def main():
 				print("Cannot resolve");
 				sock.sendto("-1".encode(),addr)
 			else:
+				print("\nResponse sent: ",response,"\n")
 				sock.sendto(response,addr)
 				
 if __name__ == "__main__":

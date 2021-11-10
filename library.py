@@ -59,36 +59,24 @@ def str_from_pointer(response, p):
 	res = ""
 	i = 0
 	if p < start:
-		while (i < len(response)-p):
-			size = response[p]
-			if(size == 192):
-				res += str_from_pointer(response, response[p+1])
-				p+=1
-				res += "."
-				continue
-			if(size == 0):
-				break
-			for j in range(1,size+1):
-				res += chr(response[p+j])
-			res += "."
-			p += size+1
+		stop = len(response)-p
 	else:
 		length = response[p-1]
-		while i < p+length:
-			size = response[p]
-			print(size)
-			if(size == 192):
-				res += str_from_pointer(response, response[p+1])
-				p+=1
-				res += "."
-				continue
-			if(size == 0):
-				break
-			for j in range(1,size+1):
-				print(chr(response[p+j]))
-				res += chr(response[p+j])
+		stop = p+length-1
+		
+	while (p < stop):
+		size = response[p]
+		if(size == 192):
+			res += str_from_pointer(response, response[p+1])
+			p+=1
 			res += "."
-			p += size+1
+			continue
+		if(size == 0):
+			break
+		for j in range(1,size+1):
+			res += chr(response[p+j])
+		res += "."
+		p += size+1
 	return res
 
 def get_ipv4(response,start):
@@ -135,7 +123,7 @@ def get_NS(response,start):#also same for CNAME
 					
 	length = response[start+11]		
 	start = start+12
-	for i in range(start,start+length):
+	for i in range(start,start+length-1):
 		x = response[i]
 		if x == 192:
 			ns += str_from_pointer(response, response[i+1])
@@ -177,10 +165,9 @@ def get_TXT(response,start):#also same for CNAME
 	length = response[start+11]		
 	start = start+12
 	
-	for i in range(start+1,start+length):
+	for i in range(start+1,start+length-1):
 		x = response[i]
 		if x == 192:
-			print(response[i+1])
 			txt += str_from_pointer(response, response[i+1])
 			i+=1
 		elif x in range(0, 16):
