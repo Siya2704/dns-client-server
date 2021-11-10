@@ -1,4 +1,4 @@
-import sys, struct, os.path, time, json,ipaddress
+import sys, struct, os.path, time, json, ipaddress, random, codecs
 from socket import*
 from threading import Thread
 
@@ -57,29 +57,38 @@ def str_from_pointer(response, p):
 		i+=1
 		
 	res = ""
+	i = 0
 	if p < start:
-		for i in range(p,len(response)-p):
-			x = response[i]
-			if x == 192:
-				res += str_from_pointer(response, response[i+1])
-				i+=1
-			elif x == 0:
+		while (i < len(response)-p):
+			size = response[p]
+			if(size == 192):
+				res += str_from_pointer(response, response[p+1])
+				p+=1
+				res += "."
+				continue
+			if(size == 0):
 				break
-			elif x in range(1, 16):
-				res += "."
-			else:
-				res += chr(response[i])
+			for j in range(1,size+1):
+				res += chr(response[p+j])
+			res += "."
+			p += size+1
 	else:
-		length = response[start+11]
-		for i in range (p,start+12+length):
-			x = response[i]
-			if x == 192:
-				res += str_from_pointer(response, response[i+1])
-				i+=1
-			elif x in range(0, 16):
+		length = response[p-1]
+		while i < p+length:
+			size = response[p]
+			print(size)
+			if(size == 192):
+				res += str_from_pointer(response, response[p+1])
+				p+=1
 				res += "."
-			else:
-				res += chr(response[i])
+				continue
+			if(size == 0):
+				break
+			for j in range(1,size+1):
+				print(chr(response[p+j]))
+				res += chr(response[p+j])
+			res += "."
+			p += size+1
 	return res
 
 def get_ipv4(response,start):
@@ -95,7 +104,7 @@ def get_ipv4(response,start):
 		ipv4 += str(ip[j])
 		if(j != 3):
 			ipv4 += "."
-	return res[1:],ipv4
+	return res,ipv4
 
 def get_ipv6(response,start):
 	#name
@@ -116,7 +125,7 @@ def get_ipv6(response,start):
 		if(i != 14):
 			ipv6 += ":"
 	#ipv6 has ip address
-	return res[1:],ipv6	
+	return res,ipv6	
 		
 def get_NS(response,start):#also same for CNAME
 	#nameserver
@@ -135,7 +144,7 @@ def get_NS(response,start):#also same for CNAME
 			ns += "."
 		else:
 			ns += chr(response[i])
-	return res[1:],ns[1:]
+	return res,ns
 
 def get_MX(response,start):
 	#nameserver
@@ -157,7 +166,7 @@ def get_MX(response,start):
 			mx += "."
 		else:
 			mx += chr(response[i])
-	return res[1:],str(preference)+" "+mx[1:]		
+	return res,str(preference)+" "+mx	
 
 def get_TXT(response,start):#also same for CNAME
 	#nameserver
@@ -167,16 +176,18 @@ def get_TXT(response,start):#also same for CNAME
 					
 	length = response[start+11]		
 	start = start+12
+	
 	for i in range(start+1,start+length):
 		x = response[i]
 		if x == 192:
+			print(response[i+1])
 			txt += str_from_pointer(response, response[i+1])
 			i+=1
 		elif x in range(0, 16):
 			txt += "."
 		else:
 			txt += chr(response[i])
-	return res[1:],txt
+	return res,txt
 
 def get_time(response,start):
 	t1 = response[start]; t2 = response[start+1]
@@ -218,7 +229,7 @@ def get_SOA(response,start):
 			ram += "."
 		else:
 			ram += chr(response[j])
-	return res[1:],pns[1:],ram[1:],sn,rfi,rti,el,mt
+	return res,pns,ram,sn,rfi,rti,el,mt
 
 def get_PTR(response,start):
 	addr="";name="";
@@ -239,17 +250,18 @@ def get_PTR(response,start):
 	return addr[1:],name[1:]
 
 def get_query_details(query):
-	clas = query[len(query) - 1]
-	type = query[len(query) - 3]
-	length = len(query) - 16
-	query = query[12: 12+length]
+	length = len(query)
+	start = 12
 	st = ""
-	i = 0
-	while i < length:
-		size = query[i]
+	while start < length:
+		size = query[start]
+		if(size == 0):
+			break
 		for j in range(1,size+1):
-			st += chr(query[i+j])
+			st += chr(query[start+j])
 		st += "."
-		i += size+1
-	st = st[:len(st) - 2] #removing last two .
-	return st,type, clas
+		start += size+1
+	type = query[start+2]
+	clas = query[start+4]
+	start += 5
+	return st[:len(st) - 1] ,type, clas, start

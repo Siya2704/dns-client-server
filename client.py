@@ -1,10 +1,25 @@
 from library import *
-#public DNS server for Google DNS.
-server = '127.0.0.1'
 #DNS server runs on port 53
 serverPort = 53
 
+def open_resolv():
+	try:
+		resolvconf = open(os.path.abspath("/etc/resolv.conf"),'r')
+		for line in resolvconf.readlines():
+			if '#' in line:
+				pass
+			elif 'nameserver' in line:
+				resolver = line.split('nameserver ',1)[1]
+				resolver = resolver.split('\n',1)[0]
+				resolvconf.close()
+				return resolver
+	except Exception as e:
+		print(e)
+		resolvconf.close()
+		exit()
+		
 def parse_response(query,hostname,timeout,retry):
+	server = open_resolv()
 	sock = socket(AF_INET, SOCK_DGRAM)
 	sock.sendto(query, (server, serverPort))
 	number_queries, number_response, number_authority, number_additional, rcode, reply= send(sock,query,hostname,timeout,retry,1)
@@ -25,7 +40,7 @@ def parse_response(query,hostname,timeout,retry):
 			print(name,"\tnameserver = ",ns)
 			
 		elif(reply[start+3] == 5):#CNAME type query
-			name,cname = get_NS(reply,start)
+			name,cname = get_TXT(reply,start)
 			print(name,"\tcanonical name = ",cname)
 		
 		elif(reply[start+3] == 6):#SOA type query
@@ -60,32 +75,7 @@ def send(sock,query,hostname,timeout,retry,current_retry):
 		else:
 			print(";; connection timed out; no servers could be reached")
 			sys.exit()
-	try:
-		#data from cache
-		lst = reply.decode()
-		lst = eval(lst)# Convert decoded data into list
-		if(lst[0] =='found'):
-			lst = lst[1]
-		print("From cache")
-		for i in lst:
-			if(i[1] == 1 or i[1] == 28):
-				print("Name:\t",i[0],"\nAddress: ",i[2])
-			elif(i[1] == 2):
-				print(i[0],"\tnameserver = ",i[2])
-			elif(i[1] == 15):
-				print(i[0],"\tmail exchanger = ",i[2])
-			elif(i[1] == 16):
-				print(i[0],"\ttext = ",i[2])
-			elif(i[1] == 5):
-				print(i[0],"\tcanonical name = ",i[2])
-			elif(i[1] == 6):
-				print(i[0],"\n\torigin = ",i[2][0], "\n\tmail addr = ",i[2][1], "\n\tserial = ",i[2][2], "\n\trefresh = ",i[2][3], "\n\tretry = ",i[2][4], "\n\texpire = ",i[2][5], "\n\tminimum = ",i[2][6])
 			
-		flag = 1
-	except:
-		pass
-	if(flag == 1):#if in cache
-		sys.exit()
 	try:
 		flag = reply.decode()#if cannot resolve flag = -1
 	except:
@@ -121,7 +111,7 @@ def main():
 	timeout = 5
 	retry = 4
 	for i in range(1,len(sys.argv)-1):
-		if(sys.argv[i] == "norecurse"):
+		if(sys.argv[i] == "-norecurse"):
 			recurse = 0 #iterative
 			continue
 		x = sys.argv[i].split('=',1)[0]
