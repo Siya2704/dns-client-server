@@ -120,19 +120,10 @@ def get_NS(response,start):#also same for CNAME
 	res="";ns="";
 	if(response[start] == 192):
 		res += str_from_pointer(response, response[start+1])
-					
-	length = response[start+11]		
+	
 	start = start+12
-	for i in range(start,start+length-1):
-		x = response[i]
-		if x == 192:
-			ns += str_from_pointer(response, response[i+1])
-			i+=1
-		elif x in range(0, 16):
-			ns += "."
-		else:
-			ns += chr(response[i])
-	return res,ns
+	ns = str_from_pointer(response, start)			
+	return res[:-1],ns[:-1]
 
 def get_MX(response,start):
 	#nameserver
@@ -154,27 +145,16 @@ def get_MX(response,start):
 			mx += "."
 		else:
 			mx += chr(response[i])
-	return res,str(preference)+" "+mx	
+	return res[:-1],str(preference)+" "+mx[1:-1]
 
 def get_TXT(response,start):#also same for CNAME
-	#nameserver
 	res="";txt="";
 	if(response[start] == 192):
 		res += str_from_pointer(response, response[start+1])
 					
-	length = response[start+11]		
 	start = start+12
-	
-	for i in range(start+1,start+length-1):
-		x = response[i]
-		if x == 192:
-			txt += str_from_pointer(response, response[i+1])
-			i+=1
-		elif x in range(0, 16):
-			txt += "."
-		else:
-			txt += chr(response[i])
-	return res,txt
+	txt = str_from_pointer(response, start)	
+	return res[:-1],txt[:-1]
 
 def get_time(response,start):
 	t1 = response[start]; t2 = response[start+1]
@@ -199,7 +179,7 @@ def get_SOA(response,start):
 	for i in range(start,start+length-20):
 		x = response[i]
 		if x == 192:
-			pns += str_from_pointer(response, response[i+1])
+			pns += "."+str_from_pointer(response, response[i+1])
 			i+=2
 			break
 		elif x in range(0, 16):
@@ -210,13 +190,13 @@ def get_SOA(response,start):
 	for j in range(i,start+length-20):
 		x = response[j]
 		if x == 192:
-			ram += str_from_pointer(response, response[j+1])
+			ram += "."+str_from_pointer(response, response[j+1])
 			break
 		elif x in range(0, 16):
 			ram += "."
 		else:
 			ram += chr(response[j])
-	return res,pns,ram,sn,rfi,rti,el,mt
+	return res[:-1],pns[1:-1],ram[1:-1],sn,rfi,rti,el,mt
 
 def get_PTR(response,start):
 	addr="";name="";

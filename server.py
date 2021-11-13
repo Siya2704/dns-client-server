@@ -1,7 +1,6 @@
-
 from library import *
 sock = socket(AF_INET, SOCK_DGRAM)
-sock.bind(('127.0.0.1',53))
+sock.bind(('127.0.0.51',53))
 sock2 = socket(AF_INET, SOCK_DGRAM)
 
 def entry_cache(query, response, start, number_response):
@@ -10,7 +9,7 @@ def entry_cache(query, response, start, number_response):
 		with open("cache.json", 'a') as fp:
 			types = [1,2,5,6,15,16,28]
 			if t in types:
-				print("**Writing to cache**")
+				print("**Writing to cache(",hostname,")**")
 			for i in range(number_response):
 				type = response[start+3]
 				clas = response[start+5]
@@ -30,29 +29,32 @@ def entry_cache(query, response, start, number_response):
 					fp.write('\n')
 					
 				start += length + 12
-	except Exception as e:
+	except Exception:
 		print("**unable to write to cache**")
 
-def lookup_cache(name, type, clas,query):
-	x = query[:2] + bytes('\x08','utf-8')+query[3:7]
+def lookup_cache(name, type, clas,query,start):
+	x = query[:2] + bytes('\x81\x80','iso-8859-1')+query[4:7]
 	y = bytes('','utf-8')
 	count = 0
-	print("**Searching in cache**")
+	flag = 0 #if entry found set to 1
+	print("**Searching in cache(",name,")**")
 	with open("cache.json", 'r') as fp:
 		for line in fp.readlines():
 			dct = json.loads(line)
 			if(dct['query'] == name and dct['type'] == type and dct['class'] == clas and int(round(time.time()))< dct['toe']+dct['ttl']):
+				if dct['act_type'] == type:
+					flag = 1
 				count += 1
 				lst = dct["data"]
 				for k in lst:
 					y+= bytes(chr(k),'iso-8859-1')
 
 	x += bytes(chr(count)+"\x00\x00" + "\x00\x00",'iso-8859-1')
-	x+=query[12:]
+	x+=query[12:start]
 	x += y
 	if(count == 0):
-		return 0
-	return x
+		return 0,flag
+	return x,flag
 	
 def update_cache():
 	items_to_keep = []
@@ -105,56 +107,61 @@ def iterate_query(root,query):#for iterative query
 			return iterate_query(res, query)
 	return -1
 
-def main():	
-	#continuously updating cache
-	th = Thread(target = update_cache)
-	th.start()
+def main_server(query,addr):
+	#look cache
+	try:
+		x,flag =0,0
+		name,typ,clas,start = get_query_details(query)
+		x,flag = lookup_cache(name, typ, clas,query,start)
+		if(x != 0 and flag!=0):
+			print("\nResponse sent from cache(",name,") \n")
+			sock.sendto(x,addr)
+			return
+	except:
+		pass
+	tuple_data_dns = struct.unpack('!HHHHHH', query[:12])
+	flags = tuple_data_dns[1] 
+	rd = (flags & 256) != 0
+	if(rd == 1):
+		#recursive
+		print("***Recursive Query***")
+		dns = "8.8.8.8"
+		sock2.sendto(query, (dns, 53))
+		response, addr2 = sock2.recvfrom(2048)
+		tuple_data_dns = struct.unpack('!HHHHHH', response[:12])
+		number_response = tuple_data_dns[3]
+		if number_response >0:
+			entry_cache(query, response, start, number_response)
+		print("\nResponse sent (",name,"): \n")
+		sock.sendto(response,addr)
+	else:
+		#iterative
+		print("***Iterative Query***")
+		root = [("l.root-servers.net",'199.7.83.42')]#ICANN
+		got = False
+		try:
+			response = iterate_query(root, query)
+		except Exception:#timeout
+			response = -1
+		if(response == -1):
+			print("Cannot resolve");
+			sock.sendto("-1".encode(),addr)
+		else:
+			print("\nResponse sent (",name,"): \n")
+			sock.sendto(response,addr)
+
+
+def main():
+	fp = open('cache.json','a')
+	fp.close()
 	while True:
+		#continuously updating cache
+		th = Thread(target = update_cache)
+		th.start()
 		query, addr = sock.recvfrom(2048)
 		print("\nQuery received: ",query,"\n")
-		#look cache
-		name,typ,clas,start = get_query_details(query)
-		x = lookup_cache(name, typ, clas,query)
-		if(x != 0):
-			print("**Found in Cache**")
-			print("\nRespoonse sent: ",x,"\n")
-			sock.sendto(x,addr)
-			continue
-		print("**Not Found in Cache**")
-		tuple_data_dns = struct.unpack('!HHHHHH', query[:12])
-		flags = tuple_data_dns[1] 
-		rd = (flags & 256) != 0
-		if(rd == 1):
-			#recursive
-			print("***Recursive Query***")
-			dns = "8.8.8.8"
-			sock2.sendto(query, (dns, 53))
-			response, addr2 = sock2.recvfrom(2048)
-			tuple_data_dns = struct.unpack('!HHHHHH', response[:12])
-			number_response = tuple_data_dns[3]
-			if number_response >0:
-				entry_cache(query, response, start, number_response)
-			print("\nResponse sent: ",response,"\n")
-			sock.sendto(response,addr)
-		else:
-			#iterative
-			print("***Iterative Query***")
-			root = [("l.root-servers.net",'199.7.83.42')]#ICANN
-			got = False
-			try:
-				response = iterate_query(root, query)
-			except Exception as e:
-				print(e)
-				response = -1
-			if(response == -1):
-				print("Cannot resolve");
-				sock.sendto("-1".encode(),addr)
-			else:
-				print("\nResponse sent: ",response,"\n")
-				sock.sendto(response,addr)
-				
+		th2 = Thread(target = main_server, args = (query,addr,))
+		th2.start()
+		
 if __name__ == "__main__":
 	main()
-			
-			
-

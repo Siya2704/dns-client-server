@@ -1,5 +1,4 @@
 from library import *
-#DNS server runs on port 53
 serverPort = 53
 
 def open_resolv():
