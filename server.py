@@ -30,7 +30,7 @@ def entry_cache(query, response, start, number_response):
 					
 				start += length + 12
 	except Exception:
-		print("**unable to write to cache**")
+		print("**unable to write to cache(",hostname,")**")
 
 def lookup_cache(name, type, clas,query,start):
 	x = query[:2] + bytes('\x81\x80','iso-8859-1')+query[4:7]
@@ -155,13 +155,13 @@ def main():
 	fp = open('cache.json','a')
 	fp.close()
 	while True:
-		#continuously updating cache
-		th = Thread(target = update_cache)
-		th.start()
+		#updating cache
+		update_cache()
 		query, addr = sock.recvfrom(2048)
 		print("\nQuery received: ",query,"\n")
 		th2 = Thread(target = main_server, args = (query,addr,))
 		th2.start()
+		time.sleep(0.2)
 		
 if __name__ == "__main__":
 	main()

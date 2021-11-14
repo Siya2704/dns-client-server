@@ -92,8 +92,8 @@ def send(sock,query,hostname,timeout,retry,current_retry):
 	
 
 def finalCall(hostname,type,recurse,timeout,retry):
-	print("Server:		127.0.0.1")
-	print("Address:	127.0.0.1#53")
+	print("Server:		127.0.0.51")
+	print("Address:	127.0.0.51#53")
 	if type == 'PTR':
 		hostname = ipaddress.ip_address(hostname).reverse_pointer
 	query = constructQuery(hostname,type,"IN",recurse)
