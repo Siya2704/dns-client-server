@@ -1,3 +1,5 @@
+DNS SERVER+CLIENT computer networks project sem 5
+MIS: 111903106
 Server runs on `127.0.0.51`
 make entry into `"/etc/resolv.conf"`:`nameserver:127.0.0.51`
 
