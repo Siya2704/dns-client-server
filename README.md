@@ -11,4 +11,3 @@ if you want to provide other queries then run command :
 - `python3 client.py [-option][name]`
 - options implemented are -timeout, -retry, -type, -norecurse
 - supported types = ['A','AAAA','NS','MX','CNAME','SOA','TXT','PTR']
-
